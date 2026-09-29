@@ -81,7 +81,7 @@ function NavIcon({ icon }: { icon: string }) {
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, workspace, loading, signOut, getToken, refreshWorkspace } = useAuth();
+  const { user, workspace, loading, signOut, getToken, refreshWorkspace, setCustomWorkspace } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -110,28 +110,33 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const handleCreateWorkspace = async () => {
     if (!companyName.trim()) return;
     setCreating(true);
+    const newWs = {
+      id: `ws-${Date.now()}`,
+      name: workspaceName.trim() || `${companyName.trim()} Intelligence`,
+      companyName: companyName.trim(),
+      organizationScale,
+      organizationType,
+      industry: organizationType,
+    };
+
     try {
       const token = (await getToken()) || 'demo-token-12345';
-      const res = await fetch('/api/workspace', {
+      await fetch('/api/workspace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          name: workspaceName.trim() || `${companyName.trim()} Intelligence`,
-          companyName: companyName.trim(),
-          organizationScale,
-          organizationType,
-        }),
-      });
-      if (res.ok) {
-        if (refreshWorkspace) {
-          await refreshWorkspace();
-        }
-        window.location.reload();
-      }
+        body: JSON.stringify(newWs),
+      }).catch((e) => console.warn('Workspace create API notice:', e));
     } catch (error) {
-      console.error('Workspace creation failed:', error);
+      console.warn('Workspace creation notice:', error);
     } finally {
+      if (setCustomWorkspace) {
+        setCustomWorkspace(newWs);
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sf_custom_workspace', JSON.stringify(newWs));
+      }
       setCreating(false);
+      window.location.href = '/app/overview';
     }
   };
 

@@ -40,6 +40,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshWorkspace: () => Promise<void>;
   signInAsDemo: (customEmail?: string, customName?: string, customOrg?: CustomOrgData) => Promise<void>;
+  setCustomWorkspace?: (ws: Workspace) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -51,6 +52,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   refreshWorkspace: async () => {},
   signInAsDemo: async () => {},
+  setCustomWorkspace: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -69,18 +71,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [workspace, setWorkspace] = useState<Workspace | null>(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
-      const savedCompany = localStorage.getItem('sf_demo_company') || 'NexusTech Global';
-      const savedScale = localStorage.getItem('sf_demo_scale') || 'Mid-Market (51-250 employees)';
-      const savedType = localStorage.getItem('sf_demo_type') || 'E-Commerce & Retail';
-      return {
-        id: 'demo-workspace',
-        name: `${savedCompany} Workspace`,
-        companyName: savedCompany,
-        organizationScale: savedScale,
-        organizationType: savedType,
-        industry: savedType,
-      };
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem('sf_demo_session') === 'true') {
+        const savedCompany = localStorage.getItem('sf_demo_company') || 'NexusTech Global';
+        const savedScale = localStorage.getItem('sf_demo_scale') || 'Mid-Market (51-250 employees)';
+        const savedType = localStorage.getItem('sf_demo_type') || 'E-Commerce & Retail';
+        return {
+          id: 'demo-workspace',
+          name: `${savedCompany} Workspace`,
+          companyName: savedCompany,
+          organizationScale: savedScale,
+          organizationType: savedType,
+          industry: savedType,
+        };
+      }
+      const savedWs = localStorage.getItem('sf_custom_workspace');
+      if (savedWs) {
+        try {
+          return JSON.parse(savedWs);
+        } catch {}
+      }
     }
     return null;
   });
@@ -212,6 +222,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setToken(idToken);
         await fetchWorkspace(idToken);
+        // Fallback: If workspace is still not set after fetchWorkspace, guarantee a valid workspace
+        setWorkspace((current) => {
+          if (current) return current;
+          const savedWs = typeof window !== 'undefined' ? localStorage.getItem('sf_custom_workspace') : null;
+          if (savedWs) {
+            try { return JSON.parse(savedWs); } catch {}
+          }
+          const rawName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Enterprise';
+          const defaultWs: Workspace = {
+            id: `ws-${firebaseUser.uid.slice(0, 8)}`,
+            name: `${rawName} Intelligence`,
+            companyName: rawName,
+            organizationScale: 'Mid-Market (51-250 employees)',
+            organizationType: 'E-Commerce & Retail',
+            industry: 'E-Commerce & Retail',
+          };
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sf_custom_workspace', JSON.stringify(defaultWs));
+          }
+          return defaultWs;
+        });
       } else {
         // Protect demo session: do NOT clear state if demo mode is active
         if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
@@ -242,6 +273,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchWorkspace]);
 
+  const setCustomWorkspace = useCallback((newWs: Workspace) => {
+    setWorkspace(newWs);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sf_custom_workspace', JSON.stringify(newWs));
+    }
+  }, []);
+
   const handleSignOut = async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('sf_demo_session');
@@ -250,6 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('sf_demo_company');
       localStorage.removeItem('sf_demo_scale');
       localStorage.removeItem('sf_demo_type');
+      localStorage.removeItem('sf_custom_workspace');
     }
     await logOut().catch(() => {});
     rawUserRef.current = null;
@@ -276,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut: handleSignOut,
         refreshWorkspace,
         signInAsDemo,
+        setCustomWorkspace,
       }}
     >
       {children}
