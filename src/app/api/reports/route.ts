@@ -7,6 +7,8 @@ import { verifyToken, getAdminDb, validateWorkspaceAccess } from '@/lib/firebase
 import { generateReportContent } from '@/lib/llm/gemini';
 import { v4 as uuid } from 'uuid';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

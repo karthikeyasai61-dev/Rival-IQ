@@ -10,6 +10,8 @@ import { analyzeCompetitiveData } from '@/lib/llm/gemini';
 import { v4 as uuid } from 'uuid';
 import type { NormalizedRecord, Signal, LLMAnalysisContext, Recommendation, CompetitiveGap } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

@@ -7,6 +7,8 @@ import { getAdminDb } from '@/lib/firebase/admin';
 import { checkHealth as checkHindsightHealth } from '@/lib/hindsight/client';
 import { checkGeminiHealth } from '@/lib/llm/gemini';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const results = {
     firebase: { status: 'checking', latency: 0, message: '' },
@@ -18,12 +20,20 @@ export async function GET() {
   try {
     const start = Date.now();
     const db = getAdminDb();
-    await db.collection('_health').doc('ping').set({ timestamp: new Date().toISOString() });
-    results.firebase = {
-      status: 'connected',
-      latency: Date.now() - start,
-      message: 'Firebase Firestore is operational',
-    };
+    if (db) {
+      await db.collection('_health').doc('ping').set({ timestamp: new Date().toISOString() });
+      results.firebase = {
+        status: 'connected',
+        latency: Date.now() - start,
+        message: 'Firebase Firestore is operational',
+      };
+    } else {
+      results.firebase = {
+        status: 'unavailable',
+        latency: 0,
+        message: 'Firebase Admin DB not initialized',
+      };
+    }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     results.firebase = {

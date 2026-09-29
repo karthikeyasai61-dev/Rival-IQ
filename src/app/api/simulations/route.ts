@@ -8,6 +8,8 @@ import { generateSimulation } from '@/lib/llm/gemini';
 import { recallForStrategy } from '@/lib/hindsight/client';
 import { v4 as uuid } from 'uuid';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

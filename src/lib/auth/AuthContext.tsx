@@ -54,10 +54,51 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
+      const email = localStorage.getItem('sf_demo_email') || 'analyst@enterprise.com';
+      const displayName = localStorage.getItem('sf_demo_name') || 'Executive Analyst';
+      return {
+        uid: 'demo-analyst-uid',
+        email,
+        displayName,
+        photoURL: null,
+      };
+    }
+    return null;
+  });
+
+  const [workspace, setWorkspace] = useState<Workspace | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
+      const savedCompany = localStorage.getItem('sf_demo_company') || 'NexusTech Global';
+      const savedScale = localStorage.getItem('sf_demo_scale') || 'Mid-Market (51-250 employees)';
+      const savedType = localStorage.getItem('sf_demo_type') || 'E-Commerce & Retail';
+      return {
+        id: 'demo-workspace',
+        name: `${savedCompany} Workspace`,
+        companyName: savedCompany,
+        organizationScale: savedScale,
+        organizationType: savedType,
+        industry: savedType,
+      };
+    }
+    return null;
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
+      return 'demo-token-12345';
+    }
+    return null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('sf_demo_session') === 'true') {
+      return false;
+    }
+    return true;
+  });
+
   const rawUserRef = React.useRef<FirebaseUser | null>(null);
 
   const fetchWorkspace = useCallback(async (idToken: string) => {

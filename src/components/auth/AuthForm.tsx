@@ -81,10 +81,10 @@ export default function AuthForm({ initialSignUp = false }: AuthFormProps) {
           }),
         }).catch((wsErr) => console.warn('Workspace creation API error:', wsErr));
 
-        router.push('/app/overview');
+        window.location.href = '/app/overview';
       } else {
         await signInWithEmail(email, password);
-        router.push('/app/overview');
+        window.location.href = '/app/overview';
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : '';
@@ -100,7 +100,7 @@ export default function AuthForm({ initialSignUp = false }: AuthFormProps) {
           organizationScale,
           organizationType,
         });
-        router.push('/app/overview');
+        window.location.href = '/app/overview';
         return;
       }
       setError(err instanceof Error ? err.message.replace('Firebase: ', '') : 'Authentication failed');
@@ -135,7 +135,7 @@ export default function AuthForm({ initialSignUp = false }: AuthFormProps) {
           console.warn('Workspace auto-init notice:', wsErr);
         }
       }
-      router.push('/app/overview');
+      window.location.href = '/app/overview';
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : '';
       if (
@@ -149,7 +149,7 @@ export default function AuthForm({ initialSignUp = false }: AuthFormProps) {
           organizationScale,
           organizationType,
         });
-        router.push('/app/overview');
+        window.location.href = '/app/overview';
         return;
       }
       setError(err instanceof Error ? err.message.replace('Firebase: ', '') : 'Google sign-in failed');
@@ -188,9 +188,10 @@ export default function AuthForm({ initialSignUp = false }: AuthFormProps) {
                   organizationScale,
                   organizationType,
                 });
-                router.push('/app/overview');
+                window.location.href = '/app/overview';
               } catch (e) {
                 console.error('Demo login error:', e);
+                window.location.href = '/app/overview';
               }
             }}
           >

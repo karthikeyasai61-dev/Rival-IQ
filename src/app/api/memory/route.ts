@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, getAdminDb, validateWorkspaceAccess } from '@/lib/firebase/admin';
 import { recall, listMemories, reflectOnCompetitor, checkHealth, retain, getBankStats } from '@/lib/hindsight/client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

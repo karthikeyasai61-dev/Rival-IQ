@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, getAdminDb, validateWorkspaceAccess } from '@/lib/firebase/admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

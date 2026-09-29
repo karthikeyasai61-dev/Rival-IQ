@@ -11,6 +11,8 @@ import { analyzeCompetitiveData } from '@/lib/llm/gemini';
 import { v4 as uuid } from 'uuid';
 import type { Signal, CompetitiveGap, NormalizedRecord } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 // GET - List datasets for workspace
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
