@@ -32,18 +32,18 @@ export default function HealthPage() {
         setHealth(data);
       } else {
         setHealth({
-          firebase: { status: 'connected', latency: 42, message: 'Firebase Cloud Firestore is operational' },
-          hindsight: { status: 'connected', latency: 115, message: 'Hindsight Vector Memory is operational' },
-          llm: { status: 'connected', latency: 260, message: 'Google Gemini 3.8 Flash is operational' },
+          firebase: { status: 'offline', latency: 0, message: `Server error HTTP ${res.status}: Check Firebase credentials` },
+          hindsight: { status: 'offline', latency: 0, message: `Server error HTTP ${res.status}: Check Hindsight API key` },
+          llm: { status: 'offline', latency: 0, message: `Server error HTTP ${res.status}: Check Gemini API key` },
         });
       }
       setLastChecked(new Date().toLocaleTimeString());
     } catch (err) {
-      console.warn('Diagnostic check note:', err);
+      const msg = err instanceof Error ? err.message : 'Network unreachable';
       setHealth({
-        firebase: { status: 'connected', latency: 42, message: 'Firebase Cloud Firestore is operational' },
-        hindsight: { status: 'connected', latency: 115, message: 'Hindsight Vector Memory is operational' },
-        llm: { status: 'connected', latency: 260, message: 'Google Gemini 3.8 Flash is operational' },
+        firebase: { status: 'offline', latency: 0, message: `Connection failed: ${msg}` },
+        hindsight: { status: 'offline', latency: 0, message: `Connection failed: ${msg}` },
+        llm: { status: 'offline', latency: 0, message: `Connection failed: ${msg}` },
       });
       setLastChecked(new Date().toLocaleTimeString());
     } finally {
@@ -65,9 +65,9 @@ export default function HealthPage() {
       );
     }
     return (
-      <div className="flex items-center gap-1.5 text-warning font-semibold text-xs">
-        <span className="w-2.5 h-2.5 rounded-full bg-warning" />
-        <span className="uppercase">{status || 'OFFLINE'}</span>
+      <div className="flex items-center gap-1.5 text-danger font-semibold text-xs" style={{ color: 'var(--danger, #ef4444)' }}>
+        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--danger, #ef4444)' }} />
+        <span>OFFLINE</span>
       </div>
     );
   };

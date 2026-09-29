@@ -1,5 +1,5 @@
 // ============================================================
-// Health Check API - Tests Firebase, Hindsight, Gemini connectivity
+// Health Check API - Real, genuine tests for Firebase, Hindsight, Gemini
 // ============================================================
 
 import { NextResponse } from 'next/server';
@@ -11,12 +11,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const results = {
-    firebase: { status: 'connected', latency: 45, message: 'Firebase Firestore is operational' },
-    hindsight: { status: 'connected', latency: 110, message: 'Hindsight memory service is operational' },
-    llm: { status: 'connected', latency: 240, message: 'Google Gemini 3.8 Flash is operational' },
+    firebase: { status: 'offline', latency: 0, message: 'Not checked' },
+    hindsight: { status: 'offline', latency: 0, message: 'Not checked' },
+    llm: { status: 'offline', latency: 0, message: 'Not checked' },
   };
 
-  // Firebase check
+  // 1. Firebase live Firestore ping
   try {
     const start = Date.now();
     const db = getAdminDb();
@@ -25,40 +25,74 @@ export async function GET(req: Request) {
       results.firebase = {
         status: 'connected',
         latency: Date.now() - start,
-        message: 'Firebase Firestore is operational',
+        message: 'Firebase Firestore is connected and operational',
+      };
+    } else {
+      results.firebase = {
+        status: 'offline',
+        latency: 0,
+        message: 'Firebase Admin credentials missing or uninitialized',
       };
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Notice';
-    console.warn('Firebase check notice:', msg);
+    const msg = error instanceof Error ? error.message : 'Unknown Firestore error';
+    results.firebase = {
+      status: 'offline',
+      latency: 0,
+      message: `Firebase error: ${msg}`,
+    };
   }
 
-  // Hindsight check
+  // 2. Hindsight live vector memory ping
   try {
     const start = Date.now();
     const hsHealth = await checkHindsightHealth();
-    results.hindsight = {
-      status: hsHealth.status === 'connected' ? 'connected' : hsHealth.status,
-      latency: Date.now() - start,
-      message: hsHealth.status === 'connected' ? 'Hindsight memory service is operational' : `Hindsight: ${hsHealth.status}`,
-    };
+    if (hsHealth.status === 'connected') {
+      results.hindsight = {
+        status: 'connected',
+        latency: Date.now() - start,
+        message: 'Hindsight memory service is connected and operational',
+      };
+    } else {
+      results.hindsight = {
+        status: 'offline',
+        latency: 0,
+        message: `Hindsight returned status: ${hsHealth.status}`,
+      };
+    }
   } catch (error) {
-    console.warn('Hindsight check notice:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown Hindsight error';
+    results.hindsight = {
+      status: 'offline',
+      latency: 0,
+      message: `Hindsight error: ${msg}`,
+    };
   }
 
-  // Gemini check
+  // 3. Gemini live inference ping
   try {
     const geminiHealth = await checkGeminiHealth();
-    results.llm = {
-      status: geminiHealth.status,
-      latency: geminiHealth.latency || 0,
-      message: geminiHealth.status === 'connected'
-        ? `Gemini (${geminiHealth.model}) is operational`
-        : `Gemini: ${geminiHealth.status}`,
-    };
+    if (geminiHealth.status === 'connected') {
+      results.llm = {
+        status: 'connected',
+        latency: geminiHealth.latency || 0,
+        message: `Gemini (${geminiHealth.model}) is connected and operational`,
+      };
+    } else {
+      results.llm = {
+        status: 'offline',
+        latency: 0,
+        message: `Gemini returned status: ${geminiHealth.status}`,
+      };
+    }
   } catch (error) {
-    console.warn('Gemini check notice:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown Gemini error';
+    results.llm = {
+      status: 'offline',
+      latency: 0,
+      message: `Gemini error: ${msg}`,
+    };
   }
 
-  return NextResponse.json(results);
+  return NextResponse.json(results, { status: 200 });
 }
