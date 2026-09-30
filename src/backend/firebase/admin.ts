@@ -5,12 +5,12 @@
 import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getStorage, type Storage } from 'firebase-admin/storage';
-import { getAuth, type Auth } from 'firebase-admin/auth';
+type Auth = import('firebase-admin/auth').Auth;
 
 let adminApp: App;
 let adminDb: Firestore;
 let adminStorage: Storage;
-let adminAuth: Auth;
+let adminAuth: Auth | null = null;
 
 function cleanPrivateKey(rawKey?: string): string | undefined {
   if (!rawKey) return undefined;
@@ -110,10 +110,16 @@ export function getAdminStorage(): Storage {
   return adminStorage;
 }
 
-export function getAdminAuth(): Auth {
+export async function getAdminAuth(): Promise<Auth | null> {
   if (adminAuth) return adminAuth;
-  adminAuth = getAuth(getAdminApp());
-  return adminAuth;
+  try {
+    const { getAuth } = await import('firebase-admin/auth');
+    adminAuth = getAuth(getAdminApp());
+    return adminAuth;
+  } catch (err) {
+    console.warn('Firebase getAdminAuth error:', err);
+    return null;
+  }
 }
 
 // Verify a Firebase ID token
@@ -128,13 +134,16 @@ export async function verifyToken(token: string) {
     } as unknown as import('firebase-admin/auth').DecodedIdToken;
   }
 
-  const auth = getAdminAuth();
   try {
-    const decoded = await auth.verifyIdToken(token);
-    return decoded;
+    const auth = await getAdminAuth();
+    if (auth && typeof auth.verifyIdToken === 'function') {
+      const decoded = await auth.verifyIdToken(token);
+      return decoded;
+    }
   } catch (err: unknown) {
     const error = err as { code?: string; message?: string };
     console.warn('Firebase verifyIdToken warning:', error?.code, error?.message);
+  }
 
     // Resilient fallback: decode token payload if issued by Google/Firebase
     try {
@@ -156,7 +165,6 @@ export async function verifyToken(token: string) {
       console.error('Fallback token parsing failed:', fallbackErr);
     }
     return null;
-  }
 }
 
 // Get user's workspace membership
