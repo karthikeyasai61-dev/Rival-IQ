@@ -132,6 +132,19 @@ async function hindsightRequest<T>(
 /**
  * Retain: Store content in Hindsight memory
  */
+function cleanMetadataForHindsight(meta: Record<string, unknown>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(meta)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'object') {
+      result[key] = Array.isArray(value) ? value.map(String).join(',') : JSON.stringify(value);
+    } else {
+      result[key] = String(value);
+    }
+  }
+  return result;
+}
+
 export async function retain(options: HindsightRetainOptions): Promise<HindsightRetainResponse> {
   const bankId = await getActiveBankId();
   
@@ -144,7 +157,7 @@ export async function retain(options: HindsightRetainOptions): Promise<Hindsight
         {
           content: options.content,
           context: (options.metadata?.context as string) || 'competitor_intelligence',
-          metadata: options.metadata || {},
+          metadata: cleanMetadataForHindsight(options.metadata || {}),
         },
       ],
     }
