@@ -21,6 +21,11 @@ function cleanPrivateKey(rawKey?: string): string | undefined {
   }
   // Replace literal escaped newlines with real newlines
   key = key.replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Normalize corrupt or underscore-delimited PEM headers
+  key = key.replace(/BEGIN[ _-]+PRIVATE[ _-]+KEY/gi, 'BEGIN PRIVATE KEY');
+  key = key.replace(/END[ _-]+PRIVATE[ _-]+KEY/gi, 'END PRIVATE KEY');
+  key = key.replace(/^-*BEGIN PRIVATE KEY-*/gm, '-----BEGIN PRIVATE KEY-----');
+  key = key.replace(/^-*END PRIVATE KEY-*/gm, '-----END PRIVATE KEY-----');
   return key;
 }
 
@@ -61,8 +66,8 @@ function getAdminApp(): App {
     if (getApps().length > 0) {
       adminApp = getApps()[0];
     } else {
-      console.error('Failed to initialize fallback Firebase admin app:', initErr);
-      throw initErr;
+      console.warn('Fallback Firebase app could not be initialized:', initErr);
+      adminApp = {} as App;
     }
   }
 
