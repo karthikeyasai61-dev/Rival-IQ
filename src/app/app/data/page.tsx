@@ -222,6 +222,9 @@ export default function DataPage() {
       const label = dataType === 'user_company' ? 'Your Company Data' : 'Competition Data';
       setUploadSuccess(`Successfully ingested "${file.name}" into ${label} with ${result.dataset.recordCount} records! Click "Run Comparative Analysis" below to evaluate.`);
       setQualityReport(result.qualityReport);
+      if (result.dataset) {
+        setDatasets((prev) => [result.dataset, ...prev.filter((d) => d.id !== result.dataset.id)]);
+      }
       await fetchDatasets();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
