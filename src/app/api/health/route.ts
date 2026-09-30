@@ -1,11 +1,8 @@
 // ============================================================
-// Health Check API - Real, genuine tests for Firebase, Hindsight, Gemini
+// Health Check API - Resilient, Real Genuine Diagnostics
 // ============================================================
 
 import { NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase/admin';
-import { checkHealth as checkHindsightHealth } from '@/lib/hindsight/client';
-import { checkGeminiHealth } from '@/lib/llm/gemini';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +13,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
-export async function GET(req: Request) {
-  const results = {
+export async function GET() {
+  const results: Record<string, { status: string; latency: number; message: string }> = {
     firebase: { status: 'offline', latency: 0, message: 'Not checked' },
     hindsight: { status: 'offline', latency: 0, message: 'Not checked' },
     llm: { status: 'offline', latency: 0, message: 'Not checked' },
@@ -30,6 +27,7 @@ export async function GET(req: Request) {
         (async () => {
           const start = Date.now();
           try {
+            const { getAdminDb } = await import('@/lib/firebase/admin');
             const db = getAdminDb();
             if (db && typeof db.collection === 'function') {
               await db.collection('_health').doc('ping').set({ timestamp: new Date().toISOString() });
@@ -45,7 +43,7 @@ export async function GET(req: Request) {
               message: 'Firebase Admin credentials missing or uninitialized',
             };
           } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown Firestore error';
+            const msg = err instanceof Error ? err.message : String(err);
             return {
               status: 'offline',
               latency: 0,
@@ -62,7 +60,8 @@ export async function GET(req: Request) {
         (async () => {
           const start = Date.now();
           try {
-            const hsHealth = await checkHindsightHealth();
+            const { checkHealth } = await import('@/lib/hindsight/client');
+            const hsHealth = await checkHealth();
             if (hsHealth.status === 'connected') {
               return {
                 status: 'connected',
@@ -76,7 +75,7 @@ export async function GET(req: Request) {
               message: `Hindsight returned status: ${hsHealth.status}`,
             };
           } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown Hindsight error';
+            const msg = err instanceof Error ? err.message : String(err);
             return {
               status: 'offline',
               latency: 0,
@@ -92,6 +91,7 @@ export async function GET(req: Request) {
       withTimeout(
         (async () => {
           try {
+            const { checkGeminiHealth } = await import('@/lib/llm/gemini');
             const geminiHealth = await checkGeminiHealth();
             if (geminiHealth.status === 'connected') {
               return {
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
               message: `Gemini returned status: ${geminiHealth.status}`,
             };
           } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown Gemini error';
+            const msg = err instanceof Error ? err.message : String(err);
             return {
               status: 'offline',
               latency: 0,
